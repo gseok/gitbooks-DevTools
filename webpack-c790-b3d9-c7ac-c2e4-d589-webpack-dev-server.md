@@ -292,7 +292,7 @@ webpack-dev-server에 대한 설정이다.
 >
 > port: server 포트 설정
 >
-> contentBase: server의 base path을 설정, \(e.g, http://localhost:port/\)가 어디에 mapping되는지 설정
+> contentBase: server의 base path을 설정, \(e.g, [http://localhost:port/\)가](http://localhost:port/%29가) 어디에 mapping되는지 설정
 
 hot module replacement을 true로 주어야, 우리가 원하는 코드 수정 후 자동 브라우저 동작이 된다.
 
@@ -323,8 +323,6 @@ webpack 1.x 버전에서는 `loaders` 을 사용 , webpack 2.x 버전에서는 `
 
 아래 webpack-dev-server 사용에서, 위 옵션을 모두 적용하여 구동한 그림을 보여주겠다.
 
-
-
 #### webpack-dev-server 사용
 
 CLI 명령어로 바로 사용 가능하다. config 파일을 별도로 명시하지 않으면 기본으로 `webpack.config.js` 을 사용한다.
@@ -349,41 +347,19 @@ $ webpack-dev-server --config webpack.config.dev.js
 
 ![](/assets/webpack-dev-server-run.png)
 
-
-
 ##### **webpack-dev-server 자동 갱신을 사용한 스크린샷**
 
-코드
+**코드**
 
 ![](/assets/webpack-dev-server-test-code1.png)
 
-webpack-dev-server가 구동되어있는 상태 코드는 'About Me' 를 출력하게 되어 있음. 
+webpack-dev-server가 구동되어있는 상태 코드는 'About Me' 를 출력하게 되어 있음.
 
-
-
-브라우저 테스트 
+**브라우저 테스트**
 
 ![](/assets/webpack-dev-server-browser-test1.png)
 
-현재 `About Me` 가 잘 출력되어 있음. 
+현재 `About Me` 가 잘 출력되어 있음.
 
-코드를 `About Me @@@@@` 로 수정한뒤 그림 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+**코드를 `About Me @@@@@` 로 수정한뒤 그림**![](/assets/webpack-dev-server-debuging.png)browser에서 소스코드 디버깅 가능. 소스 코드 역시, bundling된 형태가 아니라. 구현소스 형태로 디버깅 가능
 
