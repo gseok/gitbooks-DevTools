@@ -21,7 +21,7 @@ Basic options:
                                        [string] [default: The current directory]
   --entry      The entry point                                          [string]
   --watch, -w  Watch the filesystem for changes                        [boolean]
-  
+
 ...
 ```
 
@@ -55,8 +55,6 @@ webpack-dev-server는 `webpack` + `server` 의 기능을 한다.
 
 webpack-dev-server는 webpack와 별개의 module로 되어 있기때문에, 별도의 설치가 필요하며, 또한 webpack-dev-server을 위한 config설정이 별도로 필요하다. 이를 하나씩 소개한다.
 
-
-
 ##### webpack-dev-server 설치
 
 [npm 모듈](https://www.npmjs.com/package/webpack-dev-server)로 되어 있어 간단히 설치 가능 하다.
@@ -69,13 +67,74 @@ or
 $ npm install webpack-dev-server -g
 ```
 
+##### webpack-dev-server config 기본 설정
 
-
-##### webpack-dev-server config 설정
-
-webpack-dev-server의 config 파일은 **`webpack` 의 config 파일을 같이 사용**한다.
+webpack-dev-server의 config 파일은 `webpack`** 의 config 파일을 같이 사용**한다.
 
 따라서 webpack 설정 파일에, webpack-dev-server용 설정 값을 작성하는 형태로 되어있다.
+
+아래는 전형적인 예시이다.
+
+```js
+const path = require('path');
+
+module.exports = {
+    entry: [
+        './index.js'
+    ],
+
+    output: {
+        path: path.join(__dirname, 'dist/assets'),
+        filename: 'bundle.js'
+    },
+
+    devServer: {
+        port: 8080,
+        contentBase: path.join(__dirname, 'dist')
+    },
+
+    module: {
+        rules: [
+            {
+                test: /\.js$/,
+                exclude: [/node_modules/],
+                use: [{
+                    loader: 'babel-loader',
+                    options: { presets: ['es2015', 'react'] }
+                }],
+            }
+        ]
+    }
+};
+```
+
+살펴보면, `devServer` 옵션이 추가된 것을 볼 수 있다. webpack-dev-server의 server는 express로 되어있다고 한다.
+
+server의 포트와, server의 base path을 설정 할 수 있다. 해당 설청을하고 webpack-dev-server을 구동하면, webpack을 통한 bundling이 되고, server가 구동 되는 것을 확인 할 수 있다.
+
+
+
+**여기서 주의할점**
+
+> **sever 구동을 확인한뒤, 위 설정상 output 위치인 `dist/assets`에 가보면, `bundle.js` 가 없다. **
+
+?????????  왜 일까?
+
+webpack은 실제 bundling을 해서 `bundle.js` 을 `dist/assets` 에 file write을 한다.
+
+하지만..
+
+> **webpack-dev-server는 `In Memory` 에서 `bundle.js` 을 생성하고, 별도의 file wirte을 하지 않는다.**
+>
+> **사용자가 webpack-dev-server가 띄우 server 에서 `bundle.js` 을 요청하면..**
+>
+> **\(즉 browser에서 &lt;script src='bundle.js\`&gt;을 하면..\), webpack-dev-server 가 In Memory에 생성한 bundle.js을 **
+>
+> **실제 파일 대신 주게 된다. 따라서 bundling 속도가 빠르고, Incremental build가 가능하며..**
+>
+> **개발중 변경한 내용을 빠르게 반영해보면서 테스트가 가능하다**
+
+
 
 
 
@@ -83,7 +142,7 @@ webpack-dev-server의 config 파일은 **`webpack` 의 config 파일을 같이 �
 
 ##### webpack-dev-server 사용
 
-CLI 명령어로 바로 사용 가능하다. config 파일을 별도로 명시하지 않으면 기본으로 `webpack.config.js` 을 사용한다. 
+CLI 명령어로 바로 사용 가능하다. config 파일을 별도로 명시하지 않으면 기본으로 `webpack.config.js` 을 사용한다.
 
 CLI 명령은 다음과 같이 수행하면 된다.
 
@@ -95,8 +154,6 @@ or
 $ webpack-dev-server
 ```
 
-
-
 config을 지정해서 사용하는 것도 가능하다.
 
 ```
@@ -106,18 +163,4 @@ $ webpack-dev-server --config webpack.config.dev.js
 정상적으로 실행되면 아래 그림과 같이, `bundling이 수행`되고, `server가 구동`된다.
 
 ![](/assets/webpack-dev-server-run.png)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
