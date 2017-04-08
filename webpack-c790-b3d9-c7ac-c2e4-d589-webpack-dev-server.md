@@ -132,20 +132,12 @@ webpack은 실제 bundling을 해서 `bundle.js` 을 `dist/assets` 에 file writ
 >
 > **개발중 변경한 내용을 빠르게 반영해보면서 테스트가 가능하다**
 
-
-
 **기억하기**
 
 * webpack은 bundle.js 을 실제 output 위치에 생성
 * webpack-dev-server는 bundle.js을 in-memory에 생성, 실제 파일 미생성.
 
 여기까지 기본 설정에 대한 설명을 하였다. 서버가 통합된 형태에 `In Memory` 로 bundling이 된다. 하지만, 우리가 원하는 개발중 `on the fly` 기능은 아직 설정이 되어 있지 않다. 해당 내용을 아래 추가로 설명한다.
-
-
-
-
-
-
 
 #### webpack-dev-server config hot module replace설정
 
@@ -223,8 +215,6 @@ devtool: 'inline-source-map'
 
 source map을 생성해야 debuging이 가능하다. 개발중에는 inline-source-map을 추천한다.
 
-
-
 ##### **entry**
 
 ```js
@@ -273,17 +263,65 @@ output: {
 
 devServer 설정과 output 설정이 잘 맞아야, 정상적인 debugging이 가능하다.
 
-
-
 ##### **plugins**
 
-```
-
+```js
+plugins: [
+    // webpack-dev-server enhancement plugins
+    new webpack.HotModuleReplacementPlugin()
+],
 ```
 
 webpack 확장 모듈, hot moule replace을 사용하기 위해서는 반드시 `webpack.HotModuleReplacementPlugin` 을 추가해야 한다. 별도의 npm설치는 필요없고, 최상위에서 webpack을 가져와서, new로생성하면 된다.
 
+##### **devServer**
 
+```js
+devServer: {
+    hot: true,
+    port: 4000,
+    contentBase: path.join(__dirname, '_site')
+},
+```
+
+webpack-dev-server에 대한 설정이다.
+
+현재 설정이외 더 많은 설정이 가능하다. 참고: [https://webpack.js.org/configuration/dev-server/\#devserver](https://webpack.js.org/configuration/dev-server/#devserver)
+
+> hot: hot module replacement 기능을 사용
+>
+> port: server 포트 설정
+>
+> contentBase: server의 base path을 설정, \(e.g, http://localhost:port/\)가 어디에 mapping되는지 설정
+
+hot module replacement을 true로 주어야, 우리가 원하는 코드 수정 후 자동 브라우저 동작이 된다.
+
+##### **module**
+
+```js
+module: {
+    rules: [
+        {
+            test: /\.js$/,
+            exclude: [/node_modules/],
+            use: [{
+                loader: 'babel-loader',
+                options: { presets: ['es2015', 'react'] }
+            }],
+        }
+    ]
+}
+```
+
+babel와 같은 추가적인 moduler을 설정 할 수 있다.
+
+주의할점은 webpack 2.x 버전부터는 module을 설정하는 형태가 바뀌었다.
+
+webpack 1.x 버전에서는 `loaders` 을 사용 , webpack 2.x 버전에서는 `rules`  을 사용해야 함
+
+예제에서는 babel로 react을 es2015 형태로 만드는 설정만 해두었다.
+
+아래 webpack-dev-server 사용에서, 위 옵션을 모두 적용하여 구동한 그림을 보여주겠다.
 
 
 
@@ -310,6 +348,42 @@ $ webpack-dev-server --config webpack.config.dev.js
 정상적으로 실행되면 아래 그림과 같이, `bundling이 수행`되고, `server가 구동`된다.
 
 ![](/assets/webpack-dev-server-run.png)
+
+
+
+##### **webpack-dev-server 자동 갱신을 사용한 스크린샷**
+
+코드
+
+![](/assets/webpack-dev-server-test-code1.png)
+
+webpack-dev-server가 구동되어있는 상태 코드는 'About Me' 를 출력하게 되어 있음. 
+
+
+
+브라우저 테스트 
+
+![](/assets/webpack-dev-server-browser-test1.png)
+
+현재 `About Me` 가 잘 출력되어 있음. 
+
+코드를 `About Me @@@@@` 로 수정한뒤 그림 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
