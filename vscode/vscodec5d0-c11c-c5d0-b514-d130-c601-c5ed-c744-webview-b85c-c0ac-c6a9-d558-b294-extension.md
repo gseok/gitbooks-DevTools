@@ -50,13 +50,13 @@ const Schema = 'gseok-custom-schema';
 
 > TextDocumentContentProvider
 
-VSCode에서 정의한 Class이다. vscode의 name space 영역에 위치하고 있다. VSCode에서 에디터 영역에 content을 제공하는 클래스로, TextDocumentContentProvider를 상속 구현하여 extension만의 ui를 구현 할 수 있다. API 문서에 해당 클래스에 대한 설명은 다음과 같다.
+VSCode에서 정의한 Class이다. vscode의 name space 영역에 위치하고 있다. VSCode에서 에디터 영역에 content을 제공하는 클래스로, `TextDocumentContentProvider`를 상속 구현하여 extension만의 ui를 구현 할 수 있다. API 문서에 해당 클래스에 대한 설명은 다음과 같다.
 
 text document content provider는 읽기전용 문서\(document\)을 에디터에 제공 할 수 있다. 여기서 읽기전용의 의미는, 일반적인 에디터가, 사용자가 코드를 작성하고, 이를 저장하는 형태 즉 쓰기와 읽기를 한다면, 읽기전용의 경우, md파일을 기반으로 생성된 정적인 html 페이지와 같이, 사용자가 작성을 하지는 못하고, 사용자가 글을 읽고, 혹시 글에 링크가 있으면 그걸 눌러볼 수 있는 수준의 문서를 의미한다.
 
 그리고 text document content provider는 uri-scheme로 등록되어 있어야 한다. uri-scheme를 이용해서 에디터를 열면 해당 uri-scheme로 등록된 text document content provider을 통해 content을 제공한다.
 
-TextDocumentContentProvider는 아래와 같은 하나의 event와 하나의 method를 구현해야 한다.
+`TextDocumentContentProvider`는 아래와 같은 하나의 event와 하나의 method를 구현해야 한다.
 
 Event
 
@@ -73,15 +73,11 @@ Method
   * token: 캔슬토큰
   * ProviderResult: 리턴값이고, string 또는 thenable이 가능하다. 어떤 type을 사용하던 최종적으로는 content string이 되어야 한다.
 
-
-
 ##### VSCode에서 실제 구현
 
 앞에서 VSCode에서 제공하는 API를 간략하게 살펴보았다. 이제 해당 API와 Class을 사용해서 실제 적용하는 예제를 코드와 함께 설명하도록 하겠다.
 
-
-
-1. TextDocumentContentProvider 클래스를 상속받는 클래스 구현
+* TextDocumentContentProvider 클래스를 상속받는 클래스 구현
 
 ```js
 import * as vscode from 'vscode';
@@ -110,7 +106,7 @@ class CustomTextDocumentContentProvider implements vscode.TextDocumentContentPro
 }
 ```
 
-2. uri-scheme을 사용한 등록
+* uri-scheme을 사용한 등록
 
 ```js
 let provider = new CustomTextDocumentContentProvider();
@@ -119,7 +115,7 @@ const Schema = 'gseok-custom-schema';
 let registration = vscode.workspace.registerTextDocumentContentProvider(Schema, provider);
 ```
 
-3. 등록한 provider을 editor로 open
+* 등록한 provider을 editor로 open
 
 아래 예제에서는,  extension에서 등록한 command가 수행되면, 그때 editor을 open하는 형태로 되어 있다.
 
@@ -143,18 +139,85 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(disposable, registration);
-} 
+}
 ```
 
-gseok라는 command가 VSCode에서 사용자에 의해 호출 되면, vscode.previewHtml 커맨드를 실행 하고. 이때 등록한  uri-scheme로 되어 있는 uri를 통해서,  예제에서 작성한 CustomTextDocumentContentProvider의 provideTextDocumentContent가 불리게 된다. 이후 provideTextDocumentContent가 제공한 content가 VSCode에서 정의한 WebView의 content로 등록되면서, 화면에 editor가 열리게 된다.
+gseok라는 command가 VSCode에서 사용자에 의해 호출 되면, `vscode.previewHtml` 커맨드를 실행 하고. 이때 등록한  uri-scheme로 되어 있는 uri를 통해서,  예제에서 작성한 `CustomTextDocumentContentProvider`의 `provideTextDocumentContent`가 불리게 된다. 이후 `provideTextDocumentContent`가 제공한 content가 VSCode에서 정의한 `WebView`의 content로 등록되면서, 화면에 editor가 열리게 된다.
 
-여기까지 진행하면, 기본적인 web page 형태의 content을 VSCode의 editor로 제공 하는게 가능하다.
+여기까지 진행하면, 기본적인 web page 형태의 content을 `VSCode`의 editor로 제공 하는게 가능하다.
 
 하지만 추가적으로 제공한 content가 자체적인 lib, css을 사용하고 동작하게 하는 부분이 필요 할 수 있다.
 
 아래에 이어서 위와 같은 추가 적인 궁금증에 대하여 설명해 보도록 한다.
 
 
+
+##### 이벤트 처리 및 외부 소스 로드
+
+`VSCode`에서는 `TextDocumentContent`을 본인들이 정의한 `WebView`로 `warpping`하여 화면에 뿌리고 있다. 거기에 더하여, `window`, `document`와 같은 객체를 기본 VScode에서는 접근 할 수 없도록 하고 있다.
+
+하지만, custom으로 제공한 `TextDocumentContent`는 일종의 `iframe`와 같이 `VSCode` 본래의 html와는 별개로 작성 할 수 있다.
+
+위 기본 예제에도 있듯, head 부터 body까지 별로도 생성 가능한 형태이다. 따라서, 제공하는 어떤 content에 본인만의 css나 lib, logic을 추가하는 것이 가능하다.
+
+아래 소스로 설명하겠다.
+
+```js
+// gseokController.ts 혹은 gseokController.js 파일
+(function () {
+    function gseokTestFunction() {
+        console.log('test function called!!!');
+    }
+
+    $(document).ready(function () {
+        console.log('provided content ready...');
+
+        $('.gseokButton').on('click', () => {
+            gseokTestFunction();
+        });
+    });
+})();
+```
+
+위와 같이 버튼에 따른 이벤트 처리 로직이 있고, 해당 로직이 별도의 파일인 `gseokController.ts` 또는 `gseokController.js`로 존재한다고 한다. 이제 앞서 설명한 `TextDocumentContentProvider`을 상속받은 `CustomTextDocumentContentProvider`을 좀더 수정해 보겠다.
+
+```js
+import * as vscode from 'vscode';
+import * as path from 'path';
+
+class CustomTextDocumentContentProvider implements vscode.TextDocumentContentProvider {
+    public async provideTextDocumentContent(uri: vscode.Uri, token: vscode.CancellationToken): Promise<string> {
+        return `
+            <head>
+                <script src="${this.getPath(path.join('jquery.min.js'))}"></script>
+                <script>
+                    console.log('script run possible!!!!');
+                </script>
+                <script src="${this.getPath('gseokControler.js')}">
+                </script>
+            </head>
+            <body>
+                <div class='gseokDiv'>
+                    test....
+                </div>
+                <br/>
+                <button class='gseokButton' onClick='$(".gseokDiv").text("div text changed");'>Click</button>
+            </body>
+        `;
+    }
+
+    private getPath(resourceName: string): string {
+        let p = vscode.Uri.file(path.join(__dirname, './', resourceName)).toString();
+        return p;
+    }
+}
+```
+
+위에서 설명한 gseokController.js 파일과 jquery.min.js 파일이 CustomTextDocumentContentProvider 파일과 동일한 폴더에 위치하고 있다고 가정하였다. 이제 providerTextDocumentContent의 리턴값에, head부분에 script load 와 scrdipt run 코드를 추가하였다. 그리고, jquery와 controller을 정상 로딩 할 수 있도록 vscode.Uri.file을 통해 path을 정확한 Uri 주소로 변경해주는 유틸 getPath 함수를 작성하였다.
+
+위와 같은 형태로 작성후, VSCode에서 구동해 보면, 정상적으로 이벤트 핸들링이 가능하고, 에디터 상에 test 로 나타나고 있던 문자열이, div text changed 문자열로 변경되는 것을 확인 할 수 있다. css역시 동일한 방법을 사용해서, 내부 content의 스타일을 정의 할 수 있다.
+
+결론적으로, VSCode에서 제공하는 API를 사용해서, Editor영역에 자신만의 View를 구성 할 수 있고, 해당 View 내부에서는 이벤트 처리 및 외부 라이브러리 로딩이 가능하다.
 
 
 
