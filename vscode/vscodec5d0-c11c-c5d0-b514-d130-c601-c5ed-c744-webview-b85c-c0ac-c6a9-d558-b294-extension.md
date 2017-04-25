@@ -150,8 +150,6 @@ gseok라는 command가 VSCode에서 사용자에 의해 호출 되면, `vscode.p
 
 아래에 이어서 위와 같은 추가 적인 궁금증에 대하여 설명해 보도록 한다.
 
-
-
 ##### 이벤트 처리 및 외부 소스 로드
 
 `VSCode`에서는 `TextDocumentContent`을 본인들이 정의한 `WebView`로 `warpping`하여 화면에 뿌리고 있다. 거기에 더하여, `window`, `document`와 같은 객체를 기본 VScode에서는 접근 할 수 없도록 하고 있다.
@@ -213,13 +211,9 @@ class CustomTextDocumentContentProvider implements vscode.TextDocumentContentPro
 }
 ```
 
-위에서 설명한 gseokController.js 파일과 jquery.min.js 파일이 CustomTextDocumentContentProvider 파일과 동일한 폴더에 위치하고 있다고 가정하였다. 이제 providerTextDocumentContent의 리턴값에, head부분에 script load 와 scrdipt run 코드를 추가하였다. 그리고, jquery와 controller을 정상 로딩 할 수 있도록 vscode.Uri.file을 통해 path을 정확한 Uri 주소로 변경해주는 유틸 getPath 함수를 작성하였다.
+위에서 설명한 `gseokController.js` 파일과 `jquery.min.js` 파일이 `CustomTextDocumentContentProvider` 파일과 동일한 폴더에 위치하고 있다고 가정하였다. 이제 `providerTextDocumentContent`의 리턴값에, head부분에 script load 와 scrdipt run 코드를 추가하였다. 그리고, jquery와 controller을 정상 로딩 할 수 있도록 vscode.Uri.file을 통해 path을 정확한 Uri 주소로 변경해주는 유틸 getPath 함수를 작성하였다.
 
 위와 같은 형태로 작성후, VSCode에서 구동해 보면, 정상적으로 이벤트 핸들링이 가능하고, 에디터 상에 test 로 나타나고 있던 문자열이, div text changed 문자열로 변경되는 것을 확인 할 수 있다. css역시 동일한 방법을 사용해서, 내부 content의 스타일을 정의 할 수 있다.
 
 결론적으로, VSCode에서 제공하는 API를 사용해서, Editor영역에 자신만의 View를 구성 할 수 있고, 해당 View 내부에서는 이벤트 처리 및 외부 라이브러리 로딩이 가능하다.
-
-
-
-
 
