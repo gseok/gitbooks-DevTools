@@ -6,8 +6,6 @@ VSCode는 기본 철학이 VSCode의 모든 영역에 대하여, VSCode가 제�
 
 좀 더 쉽게 이야기 해서, VSCode의 Extension중 에디터 영역을 자신만의 Contents로 구성하는 Extension은 VSCode의 시작 페이지와 같은 형태의 구성이 가능하다.
 
-
-
 ##### VSCode에서 제공하는 API
 
 VSCode는 기본적으로 에디터 영역을 컨트롤 할 수 있는 여러 API를 가지고 있다. VSCode의 extension API 문서에서 여러 API중 다음과 같이 에디터의 content를 제공하는 provider를 등록하는 API를 발견하였다.
@@ -24,26 +22,25 @@ registerTextDocumentContentProvider(scheme: string, provider: TextDocumentConten
   * text document content provider를 등록\(register\)한다.
   * scheme당 오직 한개의 provider만 등록 가능하다.
 * 파라메터
+
   * scheme
     * 스트링 타입
     * 등록을 위한 고유한 uri 값
   * provider
+
     * TextDocumentContentProvider 타입
 
     * content을 제공하는 content provider
+
 * 리턴값
 
   * Disposable
 
     * 등록한 provider가 dispose될때 unregisted한다.
 
-
-
 즉 extension 구현시 해당 API를 사용해서 에디터 영역에 Contents를 제공 할 수 있다. 해당 API를 사용하려면, 두개의 필수 파라메터를 제공해야 한다. 각각을 살펴 보겠다.
 
-
-
-scheme
+> scheme
 
 고유한 uri  값으로 소개되어 있다. uri을 생각하면 보통 프로토콜, 호스트 이름, 패스 이 세가지 요소를 기본적으로 떠올릴 수 있다. 하지만 테스트 결과, 여기서는 고유한 값이기만 하면 되기 때문에, 굳이 프로토콜부터 시작하는 형태를 취하지 않아도 동작한다. 즉 아래와 같이 고유한 값을 설정 하기만 하면 된다.
 
@@ -51,9 +48,115 @@ scheme
 const Schema = 'gseok-custom-schema';
 ```
 
+> TextDocumentContentProvider
+
+VSCode에서 정의한 Class이다. vscode의 name space 영역에 위치하고 있다. VSCode에서 에디터 영역에 content을 제공하는 클래스로, TextDocumentContentProvider를 상속 구현하여 extension만의 ui를 구현 할 수 있다. API 문서에 해당 클래스에 대한 설명은 다음과 같다.
+
+text document content provider는 읽기전용 문서\(document\)을 에디터에 제공 할 수 있다. 여기서 읽기전용의 의미는, 일반적인 에디터가, 사용자가 코드를 작성하고, 이를 저장하는 형태 즉 쓰기와 읽기를 한다면, 읽기전용의 경우, md파일을 기반으로 생성된 정적인 html 페이지와 같이, 사용자가 작성을 하지는 못하고, 사용자가 글을 읽고, 혹시 글에 링크가 있으면 그걸 눌러볼 수 있는 수준의 문서를 의미한다.
+
+그리고 text document content provider는 uri-scheme로 등록되어 있어야 한다. uri-scheme를 이용해서 에디터를 열면 해당 uri-scheme로 등록된 text document content provider을 통해 content을 제공한다.
+
+TextDocumentContentProvider는 아래와 같은 하나의 event와 하나의 method를 구현해야 한다.
+
+Event
+
+* onDidChage
+  * 옵션널하기 때문에 구현해도 되고 안해도 된다.
+  * resource 변경시 이벤트가 발생한다.
+
+Method
+
+* `provideTextDocumentContent(uri: Uri, token: CancellationToken): ProviderResult`
+* 실제 content을 제공하는 method이다. 해당 함수를 구현해서, extension만의 UI 구성 할 수 있다.
+* 해당 메소드의 파라메터는 아래와 같은 의미를 가진다.
+  * uri: 해당 메소드를 구현하는 TextDocumentContentProvider가 등록된 스키와와 동일한 스키마
+  * token: 캔슬토큰
+  * ProviderResult: 리턴값이고, string 또는 thenable이 가능하다. 어떤 type을 사용하던 최종적으로는 content string이 되어야 한다.
 
 
-TextDocumentContentProvider 
+
+##### VSCode에서 실제 구현
+
+앞에서 VSCode에서 제공하는 API를 간략하게 살펴보았다. 이제 해당 API와 Class을 사용해서 실제 적용하는 예제를 코드와 함께 설명하도록 하겠다.
+
+
+
+1. TextDocumentContentProvider 클래스를 상속받는 클래스 구현
+
+```js
+import * as vscode from 'vscode';
+
+class CustomTextDocumentContentProvider implements vscode.TextDocumentContentProvider {
+    private _onDidChange = new vscode.EventEmitter<vscode.Uri>();
+
+    public async provideTextDocumentContent(uri: vscode.Uri, token: vscode.CancellationToken): Promise<string> {
+        return `
+            <head>
+                <!-- inner content's lib or src loaded here -->
+            </head>
+
+            <body>
+                <!-- extension own content here -->
+                <div>
+                    Hello This is My custom Read Only Editor Contents
+                </div>
+            </body>
+        `;
+    }
+
+    get onDidChange(): vscode.Event<vscode.Uri> {
+        return this._onDidChange.event;
+    }
+}
+```
+
+2. uri-scheme을 사용한 등록
+
+```js
+let provider = new CustomTextDocumentContentProvider();
+const Schema = 'gseok-custom-schema';
+
+let registration = vscode.workspace.registerTextDocumentContentProvider(Schema, provider);
+```
+
+3. 등록한 provider을 editor로 open
+
+아래 예제에서는,  extension에서 등록한 command가 수행되면, 그때 editor을 open하는 형태로 되어 있다.
+
+```js
+export function activate(context: vscode.ExtensionContext) {
+    let provider = new CustomTextDocumentContentProvider();
+    const Schema = 'gseok-custom-schema';
+
+    let registration = vscode.workspace.registerTextDocumentContentProvider(Schema, provider);
+
+    let disposable = vscode.commands.registerCommand('gseok', () => {
+        let previewUri = vscode.Uri.parse(Schema + '://authority/');
+
+        return vscode.commands.executeCommand('vscode.previewHtml', previewUri,
+                vscode.ViewColumn.One, 'Gseok Test Title').then((success) => {
+            // editor open success after called here
+            console.log('success open editor', success);
+        }, (reason) => {
+            vscode.window.showErrorMessage(reason);
+        });
+    });
+
+    context.subscriptions.push(disposable, registration);
+} 
+```
+
+gseok라는 command가 VSCode에서 사용자에 의해 호출 되면, vscode.previewHtml 커맨드를 실행 하고. 이때 등록한  uri-scheme로 되어 있는 uri를 통해서,  예제에서 작성한 CustomTextDocumentContentProvider의 provideTextDocumentContent가 불리게 된다. 이후 provideTextDocumentContent가 제공한 content가 VSCode에서 정의한 WebView의 content로 등록되면서, 화면에 editor가 열리게 된다.
+
+여기까지 진행하면, 기본적인 web page 형태의 content을 VSCode의 editor로 제공 하는게 가능하다.
+
+하지만 추가적으로 제공한 content가 자체적인 lib, css을 사용하고 동작하게 하는 부분이 필요 할 수 있다.
+
+아래에 이어서 위와 같은 추가 적인 궁금증에 대하여 설명해 보도록 한다.
+
+
+
+
 
 
 
